@@ -1,0 +1,514 @@
+/* SkyMD 预览视图样式表
+   作用：渲染 marked 生成的 HTML（容器为 #main-container）。
+   风格参照 document.css：沿用同一套配色变量、圆角、字体与排版尺度。
+
+   注意：
+     1. 本文件由 viewer.html 通过 /css/viewer.css 直接引入，无需构建；
+     2. 使用标准（非嵌套）语法，@media 一律写在最外层，保证 WebView 直接可用；
+     3. 若后续接入 css_flatten.py，可将其视作「已展开」的样式表使用。 */
+
+/* ---------- 设计令牌（与 document.css 保持一致） ---------- */
+:root {
+    --style-border-radius: 10px;
+    --style-side-padding: clamp(12px, 5%, 60px);
+    /* 正文阅读栏最大宽度：过宽时自动居中，过窄时自动收缩 */
+    --style-content-width: 60rem;
+    --style-font-family: "Open Sans", "Verdana", "Microsoft Yahei", sans-serif;
+    --style-font-mono: "JetBrains Mono", "Consolas", "Menlo", "Droid Sans Mono", monospace, sans-serif;
+
+    --color-background: rgb(236, 236, 236);
+    --color-theme: rgb(36, 119, 203);
+    --color-theme-shallow: rgb(209, 234, 255);
+    --color-hr: #b3b3b3;
+    --color-text: black;
+    --color-white: white;
+    --color-contrast-text: white;
+    --color-mono-background: rgba(225, 225, 225, 0.75);
+    --color-box-background: rgba(170, 170, 170, 0.12);
+    --color-active: rgb(36, 119, 203);
+    --color-active-shallow: rgb(226, 242, 255);
+    --color-link-active: black;
+    --color-link-active-background: rgb(255, 208, 0);
+    --color-green: green;
+    --color-red: rgb(209, 0, 0);
+    --color-grey: rgb(71, 71, 71);
+    --color-grey-shallow: rgb(185, 185, 185);
+    --color-pink: rgb(255, 120, 142);
+    --color-shadow: rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --color-background: rgb(18, 18, 20);
+        --color-theme: rgb(64, 156, 255);
+        --color-theme-shallow: rgba(64, 156, 255, 0.15);
+        --color-hr: rgba(255, 255, 255, 0.12);
+        --color-text: rgb(229, 229, 234);
+        --color-contrast-text: rgb(18, 18, 20);
+        --color-white: rgb(30, 30, 35);
+        --color-mono-background: rgba(255, 255, 255, 0.06);
+        --color-box-background: rgba(255, 255, 255, 0.04);
+        --color-active: rgb(64, 156, 255);
+        --color-active-shallow: rgba(64, 156, 255, 0.12);
+        --color-link-active: rgb(255, 235, 120);
+        --color-link-active-background: rgba(255, 208, 0, 0.2);
+        --color-green: rgb(48, 219, 91);
+        --color-red: rgb(255, 85, 85);
+        --color-grey: rgb(160, 160, 168);
+        --color-grey-shallow: rgba(255, 255, 255, 0.08);
+        --color-pink: rgb(255, 130, 155);
+        --color-shadow: rgba(0, 0, 0, 0.6);
+    }
+}
+
+/* ---------- 基础 ---------- */
+html,
+body {
+    font-family: var(--style-font-family);
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-size: clamp(15px, 13.5px + 0.375vw, 18px);
+    line-height: 165%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-wrap: break-word;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* 阅读栏：限制行宽并居中，两侧留出可伸缩留白 */
+#main-container {
+    box-sizing: border-box;
+    max-width: var(--style-content-width);
+    margin: 0 auto;
+    padding: clamp(20px, 4vh, 48px) var(--style-side-padding) 64px;
+}
+
+#main-container > :first-child {
+    margin-top: 0;
+}
+
+#main-container > :last-child {
+    margin-bottom: 0;
+}
+
+::selection {
+    background-color: var(--color-theme-shallow);
+    color: var(--color-text);
+}
+
+/* 细滚动条，配合 WebView 的深/浅色背景 */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-grey-shallow) transparent;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--color-grey-shallow);
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-grey);
+}
+
+/* ---------- 标题 ---------- */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--color-theme);
+    font-weight: normal;
+    line-height: 1.3;
+    scroll-margin-top: 1em;
+}
+
+h1 b, h2 b, h3 b, h4 b, h5 b, h6 b {
+    color: var(--color-theme);
+    font-weight: bolder;
+}
+
+h1 {
+    font-size: clamp(26px, 19px + 1.75vw, 40px);
+    margin: 1.2em 0 0.5em;
+    padding-bottom: 0.2em;
+    border-bottom: 3px solid var(--color-theme-shallow);
+}
+
+h2 {
+    font-size: clamp(23px, 18px + 1.25vw, 33px);
+    margin: 1.4em 0 0.5em;
+    padding-bottom: 0.15em;
+    border-bottom: 1px solid var(--color-hr);
+}
+
+/* h3：左侧主题色短块 + 右侧渐隐细线，呼应 document.css 的分隔线风格 */
+h3 {
+    font-size: clamp(21px, 17px + 1vw, 29px);
+    margin: 1.3em 0 0.4em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+h3::before {
+    content: "";
+    flex: none;
+    width: 0.35em;
+    height: 0.85em;
+    border-radius: 999px;
+    background: var(--color-theme);
+}
+
+h3::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+    margin-left: 6px;
+    background: linear-gradient(to right, var(--color-hr), transparent);
+}
+
+h4 {
+    font-size: clamp(19px, 15.5px + 0.875vw, 26px);
+    margin: 1.2em 0 0.35em;
+}
+
+h5 {
+    font-size: clamp(17px, 14px + 0.75vw, 23px);
+    margin: 1.1em 0 0.3em;
+}
+
+h6 {
+    font-size: clamp(16px, 14px + 0.5vw, 20px);
+    margin: 1em 0 0.3em;
+    color: var(--color-grey);
+}
+
+/* 标题内联等宽/代码元素不再放大 */
+h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
+    font-size: 0.85em;
+}
+
+/* ---------- 正文 ---------- */
+p {
+    margin: 0.75em 0;
+    padding: 0;
+    /* 中文文档式首行缩进，与 document.css 的 article p 保持一致 */
+    text-indent: 2em;
+}
+
+/* 列表项、引用、表格与 .no-indent 内的段落不缩进 */
+li p,
+blockquote p,
+td p,
+th p,
+.no-indent p {
+    text-indent: 0;
+}
+
+strong {
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+em {
+    font-style: italic;
+    color: var(--color-theme);
+}
+
+del,
+s {
+    color: var(--color-grey);
+    text-decoration-thickness: 2px;
+    text-decoration-color: var(--color-red);
+}
+
+mark {
+    background-color: var(--color-link-active-background);
+    color: var(--color-text);
+    padding: 0 2px;
+    border-radius: 3px;
+}
+
+sub,
+sup {
+    font-size: 0.75em;
+    line-height: 0;
+}
+
+abbr[title] {
+    text-decoration: underline dotted;
+    cursor: help;
+}
+
+kbd {
+    font-family: var(--style-font-mono);
+    font-size: 0.85em;
+    padding: 2px 6px;
+    border: 1px solid var(--color-hr);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background-color: var(--color-box-background);
+    color: var(--color-text);
+}
+
+.no-indent {
+    text-indent: 0;
+}
+
+/* ---------- 链接 ---------- */
+a {
+    color: var(--color-active);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    transition: text-decoration-thickness 0.1s ease, color 0.1s ease;
+}
+
+a:hover {
+    text-decoration-thickness: 2px;
+}
+
+a:active {
+    background-color: var(--color-link-active-background);
+    color: var(--color-link-active);
+}
+
+/* 纯锚点（脚注、目录）不加下划线 */
+a[href^="#"] {
+    text-decoration: none;
+    border-bottom: 1px dashed var(--color-active);
+}
+
+/* ---------- 列表 ---------- */
+ul,
+ol {
+    margin: 0.75em 0;
+    padding-left: clamp(20px, 4vw, 32px);
+}
+
+li {
+    margin: 0.25em 0;
+}
+
+li::marker {
+    color: var(--color-theme);
+}
+
+li > ul,
+li > ol {
+    margin: 0.25em 0;
+}
+
+/* GFM 任务列表 */
+li.task-list-item {
+    list-style: none;
+}
+
+li.task-list-item::marker {
+    content: "";
+}
+
+li.task-list-item input[type="checkbox"] {
+    margin: 0 0.5em 0 -1.4em;
+    accent-color: var(--color-theme);
+    vertical-align: middle;
+}
+
+/* ---------- 引用 ---------- */
+blockquote {
+    margin: 1em 0;
+    padding: 0.25em 1.1em;
+    border-left: 5px solid var(--color-theme);
+    background-color: var(--color-box-background);
+    border-radius: 0 var(--style-border-radius) var(--style-border-radius) 0;
+    color: var(--color-grey);
+}
+
+blockquote > :first-child {
+    margin-top: 0.4em;
+}
+
+blockquote > :last-child {
+    margin-bottom: 0.4em;
+}
+
+/* ---------- 代码 ---------- */
+code {
+    font-family: var(--style-font-mono);
+    font-size: clamp(14px, 13px + 0.25vw, 16px);
+    background-color: var(--color-mono-background);
+    color: var(--color-text);
+    padding: 2px 6px;
+    border-radius: 5px;
+    overflow-wrap: break-word;
+}
+
+pre {
+    font-family: var(--style-font-mono);
+    font-size: clamp(14px, 13px + 0.25vw, 16px);
+    background-color: var(--color-mono-background);
+    color: var(--color-text);
+    margin: 1em 0;
+    padding: 14px 16px;
+    border: 1px solid var(--color-hr);
+    border-radius: var(--style-border-radius);
+    line-height: 1.55;
+    overflow-x: auto;
+    tab-size: 4;
+}
+
+pre code {
+    display: block;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    color: inherit;
+    font-size: inherit;
+    white-space: pre;
+}
+
+/* ---------- 表格 ---------- */
+table {
+    width: 100%;
+    margin: 1em 0;
+    border-collapse: collapse;
+    border: 1px solid var(--color-hr);
+    border-radius: var(--style-border-radius);
+    overflow: hidden;
+    font-size: clamp(14px, 13px + 0.25vw, 16px);
+}
+
+th,
+td {
+    border: 1px solid var(--color-hr);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+}
+
+thead th {
+    background-color: var(--color-theme-shallow);
+    color: var(--color-text);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+tbody tr:nth-child(even) {
+    background-color: var(--color-box-background);
+}
+
+tbody tr:hover {
+    background-color: var(--color-active-shallow);
+}
+
+/* ---------- 图片与分隔线 ---------- */
+img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    vertical-align: middle;
+}
+
+hr {
+    background: var(--color-hr);
+    border: 0;
+    height: 1px;
+    margin: 2em 0;
+}
+
+/* ---------- 折叠块（marked 不会生成，供自定义语法使用） ---------- */
+details {
+    margin: 1em 0;
+    padding: 0.5em 1em;
+    border: 1px solid var(--color-hr);
+    border-radius: var(--style-border-radius);
+    background-color: var(--color-box-background);
+}
+
+summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--color-theme);
+}
+
+/* ---------- 脚注（GFM） ---------- */
+.footnotes {
+    margin-top: 2.5em;
+    padding-top: 1em;
+    border-top: 2px solid var(--color-theme-shallow);
+    font-size: 0.9em;
+    color: var(--color-grey);
+}
+
+.footnotes ol {
+    padding-left: 1.5em;
+}
+
+.footnotes li::marker {
+    color: var(--color-grey);
+}
+
+.footnotes a[href^="#"] {
+    border-bottom: none;
+    color: var(--color-active);
+}
+
+/* ---------- 断点（必须位于最外层） ---------- */
+@media (max-width: 620px) {
+    #main-container {
+        padding-top: 20px;
+        padding-bottom: 40px;
+    }
+
+    h3::after {
+        margin-left: 2px;
+    }
+
+    p {
+        text-indent: 1.5em;
+    }
+
+    blockquote {
+        padding: 0.2em 0.8em;
+    }
+}
+
+@media print {
+    body {
+        background: white;
+        color: black;
+    }
+
+    #main-container {
+        max-width: none;
+        padding: 0;
+    }
+
+    a {
+        color: black;
+    }
+
+    pre,
+    blockquote,
+    table {
+        box-shadow: none;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        break-after: avoid;
+    }
+}
